@@ -1,12 +1,60 @@
+from rest_framework.permissions import IsAuthenticatedOrReadOnly
+
 from .models import (UserProfile,Category,SubCategory,Course,Lesson,
                      Assignment,Exam,Question,Option,Certificate,Review)
-from .serializers import (UserProfileSerializer, CategoryListSerializer, CategoryDetailSerializer,
+from .serializers import (UserProfileSerializer, UserProfileLoginSerializer, CategoryDetailSerializer,
                           SubCategoryListSerializer, SubCategoryDetailSerializer, LessonSerializer,
                           CourseListSerializer, CourseDetailSerializer, AssignmentListSerializer,
                           AssignmentDetailSerializer, ExamListSerializer, ExamDetailSerializer,
                           QuestionSerializer, OptionSerializer, CertificateSerializer, ReviewSerializer,
-                          ExamSerializer)
-from rest_framework import viewsets,generics
+                          ExamSerializer, UserProfileRegisterSerializer, CategoryListSerializer)
+from rest_framework import viewsets,generics, permissions, status
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import CourseFilter
+from rest_framework.filters import SearchFilter, OrderingFilter
+from .pagination import CoursePagination
+from .permissions import StudentPermission, TeacherPermission
+from rest_framework.response import Response
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.tokens import RefreshToken
+from .permissions import StudentPermission,TeacherPermission
+
+
+
+
+class UserProfileRegisterCreateView(generics.CreateAPIView):
+    serializer_class = UserProfileRegisterSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class LoginView(TokenObtainPairView):
+    serializer_class = UserProfileLoginSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            return Response({"detail": "Неверные учетные данные"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = serializer.validated_data
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class LogoutView(generics.GenericAPIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            refresh_token = request.data["refresh"]
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response(status=status.HTTP_205_RESET_CONTENT)
+        except Exception:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all()
@@ -47,6 +95,13 @@ class LessonViewSet(viewsets.ModelViewSet):
 class CourseListAPIView(generics.ListAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseListSerializer
+    filter_backends = (DjangoFilterBackend, SearchFilter)
+    search_fields = ('course_name',)
+    filterset_class = CourseFilter
+    ordering_field = ('price',)
+    pagination_class = CoursePagination
+    permission_classes = (IsAuthenticatedOrReadOnly, StudentPermission, TeacherPermission)
+
 
 
 
@@ -83,6 +138,10 @@ class ExamDetailAPIView(generics.RetrieveAPIView):
 class ExamCreateAPIView(generics.CreateAPIView):
     queryset = Exam.objects.all()
     serializer_class = ExamSerializer
+    permission_classes = [TeacherPermission]
+
+
+
 
 class QuestionViewSet(viewsets.ModelViewSet):
     queryset = Question.objects.all()
@@ -105,3 +164,5 @@ class CertificateViewSet(viewsets.ModelViewSet):
 class ReviewViewSet(viewsets.ModelViewSet):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
+
+

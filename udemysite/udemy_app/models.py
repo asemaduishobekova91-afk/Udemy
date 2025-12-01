@@ -1,7 +1,7 @@
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from multiselectfield import MultiSelectField
-from django.core.validators import MinValueValidator, MaxValueValidator
 
 class UserProfile(AbstractUser):
     ROLE_CHOICES = (

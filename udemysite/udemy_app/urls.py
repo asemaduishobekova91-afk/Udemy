@@ -2,9 +2,16 @@ from django.urls import path,include
 from .views import (UserProfileViewSet, LessonViewSet, AssignmentListAPIView,AssignmentDetailAPIView, ExamListAPIView,ExamDetailAPIView,
                     QuestionViewSet, OptionViewSet, CertificateViewSet,ReviewViewSet, CategoryListAPIView,
                     CategoryDetailAPIView,SubCategoryListAPIView,SubCategoryDetailAPIView,CourseListAPIView,
-                    CourseDetailAPIView,ExamCreateAPIView)
+                    CourseDetailAPIView,ExamCreateAPIView, UserProfileRegisterCreateView,
+                    LoginView,LogoutView)
 
 from rest_framework.routers import SimpleRouter
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+    TokenRefreshView,
+    TokenVerifyView,
+)
+
 router = SimpleRouter()
 router.register(r'userprofile',UserProfileViewSet)
 router.register(r'lesson',LessonViewSet)
@@ -29,5 +36,13 @@ urlpatterns = [
     path('exam/',ExamListAPIView.as_view(),name='exam-list'),
     path('exam/<int:pk>/',ExamDetailAPIView.as_view(),name='exam-detail'),
     path('exam/create/',ExamCreateAPIView.as_view(),name='exam-create'),
+    path('register/',  UserProfileRegisterCreateView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
+
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+
 
 ]
